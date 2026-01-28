@@ -1,6 +1,6 @@
 {
   "name": "@rebelfi/sdk",
-  "version": "1.0",
+  "version": "1.0.0",
   "description": "RebelFi SDK",
   "type": "module",
   "main": "./dist/index.js",
