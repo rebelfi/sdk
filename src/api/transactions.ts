@@ -1,5 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { SubmitHashRequest, SubmitSignedRequest, TransactionStatusResponse } from '../types.js';
+import { SubmitHashRequest, SubmitSignedRequest, TransactionStatusResponse, RecoverTransactionRequest, RecoverTransactionResponse } from '../types.js';
 import { unwrapResponse } from '../client.js';
 
 export class TransactionsAPI {
@@ -31,6 +31,17 @@ export class TransactionsAPI {
    */
   async get(id: number): Promise<TransactionStatusResponse> {
     const response = await this.client.get(`/v1/transactions/${id}`);
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Recover a transaction that was broadcasted but not properly submitted.
+   * Use when you broadcasted a transaction externally but forgot to call submitHash.
+   * @param operationId Operation ID the transaction belongs to
+   * @param request Recovery details including the tx hash
+   */
+  async recover(operationId: number, request: RecoverTransactionRequest): Promise<RecoverTransactionResponse> {
+    const response = await this.client.post(`/v1/transactions/${operationId}/recover`, request);
     return unwrapResponse(response);
   }
 }

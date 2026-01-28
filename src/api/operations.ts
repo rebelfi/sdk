@@ -1,5 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { SupplyRequest, UnwindRequest, OperationResponse } from '../types.js';
+import { SupplyRequest, UnwindRequest, OperationResponse, CancelOperationResponse } from '../types.js';
 import { unwrapResponse } from '../client.js';
 
 export class OperationsAPI {
@@ -31,6 +31,15 @@ export class OperationsAPI {
    */
   async get(id: number): Promise<OperationResponse> {
     const response = await this.client.get(`/v1/operations/${id}`);
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Cancel a pending operation
+   * @param id Operation ID to cancel
+   */
+  async cancel(id: number): Promise<CancelOperationResponse> {
+    const response = await this.client.post(`/v1/operations/${id}/cancel`);
     return unwrapResponse(response);
   }
 }

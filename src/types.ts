@@ -50,6 +50,7 @@ export enum OperationStatus {
   SUBMITTED = 'SUBMITTED',
   CONFIRMED = 'CONFIRMED',
   FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
 }
 
 // ============================================
@@ -282,6 +283,8 @@ export interface OperationResponse {
   status: OperationStatus;
   transactions: Transaction[];
   expiresAt: string;
+  /** IDs of operations that were auto-cancelled when this operation was created */
+  cancelledOperations?: number[];
 }
 
 // ============================================
@@ -291,6 +294,8 @@ export interface OperationResponse {
 export interface SubmitHashRequest {
   operationId: number;
   txHash: string;
+  /** Transaction ID for multi-transaction operations (e.g., EVM APPROVE + SUPPLY). If omitted, associates hash with first unsigned transaction. */
+  transactionId?: number;
 }
 
 export interface SubmitSignedRequest {
@@ -308,6 +313,32 @@ export interface TransactionStatusResponse {
   confirmations?: number;
   blockNumber?: number;
   error?: string;
+}
+
+// ============================================
+// CANCEL OPERATION TYPES
+// ============================================
+
+export interface CancelOperationResponse {
+  operationId: number;
+  status: string;
+  success: boolean;
+}
+
+// ============================================
+// TRANSACTION RECOVERY TYPES
+// ============================================
+
+export interface RecoverTransactionRequest {
+  txHash: string;
+  /** Transaction ID from the transactions array. If omitted, attempts to match first unsigned transaction. */
+  transactionId?: number;
+}
+
+export interface RecoverTransactionResponse {
+  success: boolean;
+  transactionId: number;
+  txHash: string;
 }
 
 // ============================================
@@ -331,6 +362,8 @@ export enum ErrorCode {
   OPERATION_EXPIRED = 'OPERATION_EXPIRED',
   OPERATION_ALREADY_SUBMITTED = 'OPERATION_ALREADY_SUBMITTED',
   TOKEN_MISMATCH = 'TOKEN_MISMATCH',
+  INVALID_OPERATION_STATUS = 'INVALID_OPERATION_STATUS',
+  OPERATION_IN_PROGRESS = 'OPERATION_IN_PROGRESS',
 
   // Resource errors
   VENUE_NOT_FOUND = 'VENUE_NOT_FOUND',

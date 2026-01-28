@@ -164,6 +164,15 @@ const unwindOp = await client.operations.unwind({
 // Get operation status
 const operation = await client.operations.get(operationId);
 console.log(`Status: ${operation.status}`);
+
+// Check if any previous operations were auto-cancelled
+if (supplyOp.cancelledOperations?.length) {
+  console.log(`Auto-cancelled operations: ${supplyOp.cancelledOperations}`);
+}
+
+// Cancel a pending operation
+const cancelResult = await client.operations.cancel(operationId);
+console.log(`Cancelled: ${cancelResult.success}`);
 ```
 
 ### Transactions
@@ -184,6 +193,18 @@ await client.transactions.submitSigned({
   operationId: operation.operationId,
   signedTransaction: 'base64_encoded_signed_tx',
   txHash: '5abc...'  // Optional, computed if not provided
+});
+
+// For multi-transaction operations (EVM), specify which transaction:
+await client.transactions.submitHash({
+  operationId: operation.operationId,
+  txHash: '0xabc...',
+  transactionId: operation.transactions[0].id  // Target specific tx
+});
+
+// Recover a transaction that was broadcasted but not submitted
+const recovered = await client.transactions.recover(operation.operationId, {
+  txHash: '0xabc...'
 });
 
 // Get transaction status
@@ -221,7 +242,7 @@ try {
 ### Error Codes
 
 - `INVALID_AMOUNT`, `INVALID_ADDRESS`, `INVALID_TOKEN` - Validation errors
-- `INSUFFICIENT_BALANCE`, `STRATEGY_NOT_ACTIVE`, `OPERATION_EXPIRED` - Business logic errors
+- `INSUFFICIENT_BALANCE`, `STRATEGY_NOT_ACTIVE`, `OPERATION_EXPIRED`, `INVALID_OPERATION_STATUS` - Business logic errors
 - `VENUE_NOT_FOUND`, `STRATEGY_NOT_FOUND`, `OPERATION_NOT_FOUND` - Resource errors
 - `INVALID_API_KEY`, `API_KEY_DISABLED`, `RATE_LIMIT_EXCEEDED` - Auth errors
 
