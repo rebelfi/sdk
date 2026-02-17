@@ -94,6 +94,8 @@ export interface Strategy {
   maxDeposit?: string;
   /** Strategy status */
   status: StrategyStatus;
+  /** Whether this strategy supports gas-sponsored (zero-SOL) wallets */
+  supportsGasSponsorship: boolean;
 }
 
 /**
@@ -127,6 +129,8 @@ export interface VenueListResponse {
 export interface VenueQuery {
   blockchain?: Blockchain | `${Blockchain}`;
   token?: string;
+  /** When true, only returns strategies compatible with gas-sponsored wallets */
+  supportsGasSponsorship?: boolean;
 }
 
 // ============================================
@@ -168,9 +172,19 @@ export interface AllocationListResponse {
   totalYieldEarned: string;
 }
 
+/** @deprecated Use AllocationListRequest instead */
 export interface AllocationQuery {
   walletAddress: string;
   blockchain?: Blockchain | `${Blockchain}`;
+}
+
+export interface AllocationListRequest {
+  walletAddress?: string;
+  walletId?: number;
+  userId?: string;
+  blockchain?: Blockchain | `${Blockchain}`;
+  page?: number;
+  limit?: number;
 }
 
 // ============================================
@@ -178,7 +192,9 @@ export interface AllocationQuery {
 // ============================================
 
 export interface EarningsQuery {
-  walletAddress: string;
+  walletAddress?: string;
+  walletId?: number;
+  userId?: string;
   blockchain: Blockchain | `${Blockchain}`;
   token: string;
   days?: number;
@@ -265,14 +281,16 @@ export interface Transaction {
 // ============================================
 
 export interface SupplyRequest {
-  walletAddress: string;
+  walletAddress?: string;
+  walletId?: number;
   strategyId: number;
   amount: string;
   tokenAddress: string;
 }
 
 export interface UnwindRequest {
-  walletAddress: string;
+  walletAddress?: string;
+  walletId?: number;
   strategyId: number;
   amount: string;
 }
@@ -340,6 +358,48 @@ export interface RecoverTransactionResponse {
   transactionId: number;
   txHash: string;
 }
+
+// ============================================
+// WALLET TYPES
+// ============================================
+
+export interface RegisterWalletRequest {
+  walletAddress: string;
+  blockchain: Blockchain | `${Blockchain}`;
+  userId?: string;
+  orgMetadata?: Record<string, unknown>;
+}
+
+export interface WalletResponse {
+  walletId: number;
+  walletAddress: string;
+  blockchain: Blockchain;
+  userId?: string;
+  orgMetadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface WalletListResponse {
+  wallets: WalletResponse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface WalletListQuery {
+  userId?: string;
+  blockchain?: Blockchain | `${Blockchain}`;
+  page?: number;
+  limit?: number;
+}
+
+export interface UpdateWalletRequest {
+  userId?: string;
+  orgMetadata?: Record<string, unknown>;
+}
+
+export type WalletIdentifier = { walletAddress: string } | { walletId: number };
+export type WalletOrUserIdentifier = { walletAddress: string } | { walletId: number } | { userId: string };
 
 // ============================================
 // ERROR TYPES
