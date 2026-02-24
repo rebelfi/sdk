@@ -3,7 +3,10 @@ import { SubmitHashRequest, SubmitSignedRequest, TransactionStatusResponse, Reco
 import { unwrapResponse } from '../client.js';
 
 export class TransactionsAPI {
-  constructor(private readonly client: AxiosInstance) {}
+  constructor(
+    private readonly client: AxiosInstance,
+    private readonly prefix: string
+  ) {}
 
   /**
    * Submit transaction hash after organization broadcasts
@@ -11,7 +14,7 @@ export class TransactionsAPI {
    * @param request Operation ID and transaction hash
    */
   async submitHash(request: SubmitHashRequest): Promise<TransactionStatusResponse> {
-    const response = await this.client.post('/v1/transactions/submit-hash', request);
+    const response = await this.client.post(`${this.prefix}/transactions/submit-hash`, request);
     return unwrapResponse(response);
   }
 
@@ -21,7 +24,7 @@ export class TransactionsAPI {
    * @param request Operation ID and signed transaction
    */
   async submitSigned(request: SubmitSignedRequest): Promise<TransactionStatusResponse> {
-    const response = await this.client.post('/v1/transactions/submit-signed', request);
+    const response = await this.client.post(`${this.prefix}/transactions/submit-signed`, request);
     return unwrapResponse(response);
   }
 
@@ -30,7 +33,7 @@ export class TransactionsAPI {
    * @param id Transaction ID
    */
   async get(id: number): Promise<TransactionStatusResponse> {
-    const response = await this.client.get(`/v1/transactions/${id}`);
+    const response = await this.client.get(`${this.prefix}/transactions/${id}`);
     return unwrapResponse(response);
   }
 
@@ -41,7 +44,7 @@ export class TransactionsAPI {
    * @param request Recovery details including the tx hash
    */
   async recover(operationId: number, request: RecoverTransactionRequest): Promise<RecoverTransactionResponse> {
-    const response = await this.client.post(`/v1/transactions/${operationId}/recover`, request);
+    const response = await this.client.post(`${this.prefix}/transactions/${operationId}/recover`, request);
     return unwrapResponse(response);
   }
 }

@@ -1,5 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { createHttpClient } from './client.js';
+import { createHttpClient, getVersionPrefix } from './client.js';
 import { VenuesAPI } from './api/venues.js';
 import { AllocationsAPI } from './api/allocations.js';
 import { OperationsAPI } from './api/operations.js';
@@ -63,12 +63,13 @@ export class RebelfiClient {
     }
 
     this.client = createHttpClient(config);
+    const prefix = getVersionPrefix(config);
 
-    this.venues = new VenuesAPI(this.client);
-    this.allocations = new AllocationsAPI(this.client);
-    this.operations = new OperationsAPI(this.client);
-    this.transactions = new TransactionsAPI(this.client);
-    this.wallets = new WalletsAPI(this.client);
+    this.venues = new VenuesAPI(this.client, prefix);
+    this.allocations = new AllocationsAPI(this.client, prefix);
+    this.operations = new OperationsAPI(this.client, prefix);
+    this.transactions = new TransactionsAPI(this.client, prefix);
+    this.wallets = new WalletsAPI(this.client, prefix);
   }
 }
 

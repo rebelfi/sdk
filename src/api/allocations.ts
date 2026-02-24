@@ -10,7 +10,10 @@ import {
 import { unwrapResponse } from '../client.js';
 
 export class AllocationsAPI {
-  constructor(private readonly client: AxiosInstance) {}
+  constructor(
+    private readonly client: AxiosInstance,
+    private readonly prefix: string
+  ) {}
 
   /**
    * List all allocations for a wallet.
@@ -20,11 +23,11 @@ export class AllocationsAPI {
   async list(query: AllocationListRequest | AllocationQuery): Promise<AllocationListResponse> {
     // If it has walletId or userId, use the new POST endpoint
     if ('walletId' in query || 'userId' in query) {
-      const response = await this.client.post('/v1/allocations', query);
+      const response = await this.client.post(`${this.prefix}/allocations`, query);
       return unwrapResponse(response);
     }
     // Legacy: use POST with walletAddress
-    const response = await this.client.post('/v1/allocations', query);
+    const response = await this.client.post(`${this.prefix}/allocations`, query);
     return unwrapResponse(response);
   }
 
@@ -37,7 +40,7 @@ export class AllocationsAPI {
     const params = typeof wallet === 'string'
       ? { walletAddress: wallet }
       : { walletId: wallet };
-    const response = await this.client.get(`/v1/allocations/strategy/${strategyId}`, { params });
+    const response = await this.client.get(`${this.prefix}/allocations/strategy/${strategyId}`, { params });
     return unwrapResponse(response);
   }
 
@@ -45,7 +48,7 @@ export class AllocationsAPI {
    * @deprecated Use get(strategyId, wallet) instead
    */
   async getByVenue(venueId: number, walletAddress: string): Promise<Allocation> {
-    const response = await this.client.get(`/v1/allocations/${venueId}`, {
+    const response = await this.client.get(`${this.prefix}/allocations/${venueId}`, {
       params: { walletAddress }
     });
     return unwrapResponse(response);
@@ -55,7 +58,7 @@ export class AllocationsAPI {
    * Get earnings history for a wallet with daily granularity
    */
   async earnings(query: EarningsQuery): Promise<EarningsResponse> {
-    const response = await this.client.get('/v1/allocations/earnings', { params: query });
+    const response = await this.client.get(`${this.prefix}/allocations/earnings`, { params: query });
     return unwrapResponse(response);
   }
 }

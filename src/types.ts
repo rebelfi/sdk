@@ -306,6 +306,53 @@ export interface OperationResponse {
 }
 
 // ============================================
+// UNSIGNED TRANSACTION TYPES
+// ============================================
+
+/**
+ * EVM-specific transaction fields.
+ * Use these when your wallet builds transactions from components
+ * rather than deserializing the serialized transaction.
+ */
+export interface EvmTransactionFields {
+  /** Contract or recipient address */
+  to: string;
+  /** Encoded call data (hex string) */
+  data: string;
+  /** Native token value in wei (usually '0' for token operations) */
+  value?: string;
+  /** Gas limit */
+  gasLimit?: string;
+  /** Gas price in wei (legacy transactions) */
+  gasPrice?: string;
+  /** EIP-1559 max fee per gas */
+  maxFeePerGas?: string;
+  /** EIP-1559 priority fee per gas */
+  maxPriorityFeePerGas?: string;
+  /** Transaction nonce */
+  nonce?: number;
+  /** Chain ID for replay protection */
+  chainId?: number;
+}
+
+/**
+ * A single unsigned transaction ready for signing.
+ * Returned by `operations.getUnsignedTransactions()`.
+ */
+export interface UnsignedTransactionDetail {
+  /** Transaction attempt ID — use this when calling submitHash with transactionId */
+  attemptId: number;
+  /** Serialized unsigned transaction (base64 for Solana, base64-encoded hex for EVM) */
+  unsignedTransaction: { serialized: string };
+  /** EVM-specific transaction fields for wallets that build from components */
+  evmTransaction?: EvmTransactionFields;
+  /** Blockchain network */
+  blockchain: string;
+  /** Human-readable step description (e.g., 'APPROVE_TOKEN', 'SUPPLY_TO_PROVIDER') */
+  description?: string;
+}
+
+// ============================================
 // TRANSACTION SUBMISSION TYPES
 // ============================================
 
@@ -376,6 +423,8 @@ export interface WalletResponse {
   blockchain: Blockchain;
   userId?: string;
   orgMetadata?: Record<string, unknown>;
+  walletProfileName?: string;
+  walletProfileId?: number;
   createdAt: string;
 }
 

@@ -10,6 +10,16 @@ npm install @rebelfi/sdk
 yarn add @rebelfi/sdk
 ```
 
+## Prerequisites
+
+To use the SDK you need a RebelFi API key. API keys are scoped to a **Wallet Profile** — you must create a profile in the dashboard before you can generate a key.
+
+1. Log into the [RebelFi dashboard](https://api.rebelfi.io)
+2. Go to **Settings → Wallet Profiles** and create a profile (choose a name and enable the chains you need)
+3. Go to **Settings → API Keys**, click **Generate API Key**, and select the profile you just created
+
+All wallets registered via the SDK under that key are automatically associated with its Wallet Profile.
+
 ## Quick Start
 
 ```typescript

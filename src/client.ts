@@ -67,3 +67,10 @@ export function createHttpClient(config: RebelfiSDKConfig): AxiosInstance {
 export function unwrapResponse<T>(response: { data: T }): T {
   return response.data;
 }
+
+/**
+ * API version prefix. All endpoints are under /v1.
+ */
+export function getVersionPrefix(_config: RebelfiSDKConfig): string {
+  return '/v1';
+}
