@@ -292,7 +292,10 @@ export interface UnwindRequest {
   walletAddress?: string;
   walletId?: number;
   strategyId: number;
-  amount: string;
+  /** Amount to unwind in base units. Required unless `fullWithdrawal` is true. */
+  amount?: string;
+  /** If true, withdraws the full position using the protocol's native max-withdrawal mechanism. Cannot be combined with `amount`. */
+  fullWithdrawal?: boolean;
 }
 
 export interface OperationResponse {
