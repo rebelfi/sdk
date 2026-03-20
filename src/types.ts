@@ -19,6 +19,7 @@ export enum Blockchain {
   SOLANA = 'solana',
   POLYGON = 'polygon',
   ETHEREUM = 'ethereum',
+  BASE = 'base',
 }
 
 export enum VenueStatus {
