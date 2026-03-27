@@ -522,6 +522,132 @@ export enum TransactionFailureCode {
   UNKNOWN = 'UNKNOWN',
 }
 
+// ============================================
+// RAMP TYPES
+// ============================================
+
+export interface RampKybStatusResponse {
+  kybStatus: string | null;
+  applicationUrl: string | null;
+  onrampAccount: RampOnrampAccountResponse | null;
+  onrampAccounts: RampOnrampAccountResponse[];
+}
+
+export interface CreateRampOnrampAccountRequest {
+  orgWalletId?: number;
+  walletAddress?: string;
+  blockchain?: string;
+  destinationAsset: string;
+  rail?: string;
+}
+
+export interface RampOnrampAccountResponse {
+  id: number;
+  dakotaOnrampId: string;
+  bankAccountNumber: string;
+  routingNumber: string;
+  bankName: string;
+  capabilities: string[];
+  status: string;
+  sourceAsset: string;
+  destinationAsset: string;
+  networkId: string;
+  destinationWallet?: {
+    id: number;
+    name: string;
+    address: string;
+    network: string;
+  };
+}
+
+export interface RampTransactionResponse {
+  id: number;
+  dakotaTransactionId: string;
+  usdAmount: string;
+  totalFeeAmount?: string;
+  developerFeeAmount?: string;
+  deliveredAmount?: string;
+  status: string;
+  type?: string;
+  sourceAsset?: string;
+  destinationAsset?: string;
+  networkId?: string;
+  exchangeRate?: string;
+  txHash?: string;
+  paymentRail?: string;
+  paymentReference?: string;
+  failureReason?: string;
+  statusHistory: { status: string; timestamp: string }[];
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface RampTransactionListResponse {
+  data: RampTransactionResponse[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+  };
+}
+
+export interface RampSummaryResponse {
+  totalVolumeUsd: number;
+  totalFeesUsd: number;
+  totalDelivered: number;
+  activeRampRecipients: number;
+  transactionCount: number;
+  periodBreakdown: Array<{ date: string; volumeUsd: number; transactions: number }>;
+}
+
+export interface RampExportParams {
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+// ── Offramp types ──
+
+export interface CreateRampOfframpAccountRequest {
+  orgWalletId: number;
+  sourceAsset?: string;
+  rail?: string;
+  bankDetails: {
+    routingNumber: string;
+    accountNumber: string;
+    accountType: string;
+    accountHolderName: string;
+    bankName: string;
+  };
+}
+
+export interface RampOfframpAccountResponse {
+  id: number;
+  dakotaOfframpId: string;
+  sourceCryptoAddress?: string;
+  sourceAsset?: string;
+  destinationAsset?: string;
+  networkId?: string;
+  rail?: string;
+  fiatRoutingNumber?: string;
+  fiatAccountNumberMasked?: string;
+  fiatAccountType?: string;
+  fiatAccountHolderName?: string;
+  fiatBankName?: string;
+  status: string;
+  sourceWallet?: {
+    id: number;
+    name: string;
+    address: string;
+    network: string;
+  };
+}
+
+export interface RampOfframpStatusResponse {
+  kybStatus: string | null;
+  offrampAccounts: RampOfframpAccountResponse[];
+}
+
 export class RebelfiError extends Error {
   constructor(
     message: string,
