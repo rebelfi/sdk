@@ -648,6 +648,95 @@ export interface RampOfframpStatusResponse {
   offrampAccounts: RampOfframpAccountResponse[];
 }
 
+// ── Simulation types ──
+
+export interface SimulateTransactionRequest {
+  scenario?: 'success' | 'failed' | 'rejected' | 'reversed';
+  usdAmount?: number;
+  onrampAccountId?: number;
+}
+
+export interface SimulateOfframpTransactionRequest {
+  scenario?: 'success' | 'failed';
+  usdAmount?: number;
+  offrampAccountId?: number;
+}
+
+export interface SimulationResponse {
+  success: boolean;
+  data: {
+    simulation_id: string;
+    state: string;
+  };
+}
+
+// ── Recipient types ──
+
+export interface CreateRecipientRequest {
+  name: string;
+  type?: string;
+  externalId?: string;
+  address?: {
+    street1: string;
+    street2?: string;
+    city: string;
+    region?: string;
+    postalCode?: string;
+    country?: string;
+  };
+}
+
+export interface RecipientResponse {
+  id: number;
+  name: string;
+  type: string;
+  externalId?: string;
+  destinationWalletId?: number;
+  destinationWallet?: { id: number; name: string; address: string; network: string };
+  address?: {
+    street1: string;
+    street2?: string;
+    city: string;
+    region?: string;
+    postalCode?: string;
+    country?: string;
+  };
+  bankAccount?: RampOnrampAccountResponse;
+  bankAccounts?: RampOnrampAccountResponse[];
+  onrampAccountCount?: number;
+  offrampAccountCount?: number;
+  totalVolumeUsd?: number;
+  monthlyVolumeUsd?: number;
+  transactionCount?: number;
+  createdAt: string;
+  archivedAt?: string;
+}
+
+export interface RecipientListResponse {
+  data: RecipientResponse[];
+  pagination: { page: number; perPage: number; total: number };
+}
+
+export interface CreateRecipientOnrampAccountRequest {
+  destinationWalletId: number;
+  sourceAsset?: string;
+  destinationAsset?: string;
+  rail?: string;
+}
+
+export interface CreateRecipientOfframpAccountRequest {
+  orgWalletId: number;
+  sourceAsset?: string;
+  rail?: string;
+  bankDetails: {
+    routingNumber: string;
+    accountNumber: string;
+    accountType: string;
+    accountHolderName: string;
+    bankName: string;
+  };
+}
+
 export class RebelfiError extends Error {
   constructor(
     message: string,

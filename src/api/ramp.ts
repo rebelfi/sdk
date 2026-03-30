@@ -10,8 +10,16 @@ import type {
   RampExportParams,
   CreateRampOfframpAccountRequest,
   RampOfframpAccountResponse,
-  RampOfframpStatusResponse
-} from '../types.js';
+  RampOfframpStatusResponse,
+  SimulateTransactionRequest,
+  SimulateOfframpTransactionRequest,
+  SimulationResponse,
+  CreateRecipientRequest,
+  RecipientResponse,
+  RecipientListResponse,
+  CreateRecipientOnrampAccountRequest,
+  CreateRecipientOfframpAccountRequest
+} from '../types.ts';
 
 export class RampAPI {
   constructor(
@@ -116,6 +124,128 @@ export class RampAPI {
     const response = await this.client.get(`${this.prefix}/ramp/org/offramp-transactions/export`, {
       params: { format: 'csv', ...params },
       responseType: 'text'
+    });
+    return response.data;
+  }
+
+  // ── Simulation ──
+
+  async simulateKybApproval(): Promise<RampKybStatusResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/org/kyb/simulate-approve`);
+    return unwrapResponse(response);
+  }
+
+  async simulateKybRejection(): Promise<RampKybStatusResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/org/kyb/simulate-reject`);
+    return unwrapResponse(response);
+  }
+
+  async simulateOnrampTransaction(params?: SimulateTransactionRequest): Promise<SimulationResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/org/simulate-transaction`, {
+      scenario: params?.scenario,
+      usd_amount: params?.usdAmount,
+      onramp_account_id: params?.onrampAccountId,
+    });
+    return response.data;
+  }
+
+  async simulateOfframpTransaction(params?: SimulateOfframpTransactionRequest): Promise<SimulationResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/org/simulate-offramp-transaction`, {
+      scenario: params?.scenario,
+      usd_amount: params?.usdAmount,
+      offramp_account_id: params?.offrampAccountId,
+    });
+    return response.data;
+  }
+
+  // ── KYB (additional) ──
+
+  async checkKybStatus(): Promise<RampKybStatusResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/org/kyb/check-status`);
+    return unwrapResponse(response);
+  }
+
+  // ── Recipients ──
+
+  async createRecipient(params: CreateRecipientRequest): Promise<RecipientResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients`, {
+      name: params.name,
+      type: params.type,
+      external_id: params.externalId,
+      address: params.address ? {
+        street1: params.address.street1,
+        street2: params.address.street2,
+        city: params.address.city,
+        region: params.address.region,
+        postal_code: params.address.postalCode,
+        country: params.address.country,
+      } : undefined,
+    });
+    return unwrapResponse(response);
+  }
+
+  async listRecipients(params?: { page?: number; perPage?: number }): Promise<RecipientListResponse> {
+    const response = await this.client.get(`${this.prefix}/ramp/recipients`, {
+      params: params ? { page: params.page, per_page: params.perPage } : undefined,
+    });
+    return unwrapResponse(response);
+  }
+
+  async getRecipient(id: number): Promise<RecipientResponse> {
+    const response = await this.client.get(`${this.prefix}/ramp/recipients/${id}`);
+    return unwrapResponse(response);
+  }
+
+  async archiveRecipient(id: number): Promise<RecipientResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients/${id}/archive`);
+    return unwrapResponse(response);
+  }
+
+  async createRecipientOnrampAccount(recipientId: number, params: CreateRecipientOnrampAccountRequest): Promise<RampOnrampAccountResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients/${recipientId}/onramp-accounts`, {
+      destination_wallet_id: params.destinationWalletId,
+      source_asset: params.sourceAsset,
+      destination_asset: params.destinationAsset,
+      rail: params.rail,
+    });
+    return unwrapResponse(response);
+  }
+
+  async createRecipientOfframpAccount(recipientId: number, params: CreateRecipientOfframpAccountRequest): Promise<RampOfframpAccountResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients/${recipientId}/offramp-accounts`, {
+      org_wallet_id: params.orgWalletId,
+      source_asset: params.sourceAsset,
+      rail: params.rail,
+      bank_details: {
+        routing_number: params.bankDetails.routingNumber,
+        account_number: params.bankDetails.accountNumber,
+        account_type: params.bankDetails.accountType,
+        account_holder_name: params.bankDetails.accountHolderName,
+        bank_name: params.bankDetails.bankName,
+      },
+    });
+    return unwrapResponse(response);
+  }
+
+  async listRecipientOfframpAccounts(recipientId: number): Promise<RampOfframpAccountResponse[]> {
+    const response = await this.client.get(`${this.prefix}/ramp/recipients/${recipientId}/offramp-accounts`);
+    return unwrapResponse(response);
+  }
+
+  async simulateRecipientOnrampTransaction(recipientId: number, params?: SimulateTransactionRequest): Promise<SimulationResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients/${recipientId}/simulate-transaction`, {
+      scenario: params?.scenario,
+      usd_amount: params?.usdAmount,
+      onramp_account_id: params?.onrampAccountId,
+    });
+    return response.data;
+  }
+
+  async simulateRecipientOfframpTransaction(recipientId: number, params?: SimulateOfframpTransactionRequest): Promise<SimulationResponse> {
+    const response = await this.client.post(`${this.prefix}/ramp/recipients/${recipientId}/simulate-offramp-transaction`, {
+      scenario: params?.scenario,
+      usd_amount: params?.usdAmount,
+      offramp_account_id: params?.offrampAccountId,
     });
     return response.data;
   }
