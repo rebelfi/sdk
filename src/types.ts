@@ -455,6 +455,49 @@ export type WalletIdentifier = { walletAddress: string } | { walletId: number };
 export type WalletOrUserIdentifier = { walletAddress: string } | { walletId: number } | { userId: string };
 
 // ============================================
+// WALLET PROFILE TYPES
+// ============================================
+
+export interface WalletProfile {
+  id: number;
+  name: string;
+  isEnabled: boolean;
+  enabledChains: string[];
+  walletCount: number;
+}
+
+export interface WalletProfileListResponse {
+  walletProfiles: WalletProfile[];
+}
+
+// ============================================
+// ORG OVERVIEW TYPES
+// ============================================
+
+export interface OrgOverview {
+  walletProfileId: number;
+  walletProfileName: string;
+
+  totalWallets: number;
+  activeWallets: number;
+
+  totalValueUsd: string;
+  totalYieldEarnedUsd: string;
+  averageApyDecimal: number;
+
+  protocolDistribution: DistributionEntry[];
+  assetDistribution: DistributionEntry[];
+  blockchainDistribution: DistributionEntry[];
+}
+
+export interface DistributionEntry {
+  name: string;
+  valueUsd: string;
+  percentage: number;
+  walletCount: number;
+}
+
+// ============================================
 // ERROR TYPES
 // ============================================
 

@@ -6,6 +6,7 @@ import { OperationsAPI } from './api/operations.js';
 import { TransactionsAPI } from './api/transactions.js';
 import { WalletsAPI } from './api/wallets.js';
 import { RampAPI } from './api/ramp.js';
+import { WalletProfilesAPI } from './api/wallet-profiles.js';
 import { RebelfiSDKConfig } from './types.js';
 
 // Re-export all types
@@ -58,6 +59,7 @@ export class RebelfiClient {
   public readonly transactions: TransactionsAPI;
   public readonly wallets: WalletsAPI;
   public readonly ramp: RampAPI;
+  public readonly walletProfiles: WalletProfilesAPI;
 
   constructor(config: RebelfiSDKConfig) {
     if (!config.apiKey) {
@@ -73,6 +75,7 @@ export class RebelfiClient {
     this.transactions = new TransactionsAPI(this.client, prefix);
     this.wallets = new WalletsAPI(this.client, prefix);
     this.ramp = new RampAPI(this.client, prefix);
+    this.walletProfiles = new WalletProfilesAPI(this.client, prefix);
   }
 }
 

@@ -5,7 +5,8 @@ import {
   AllocationQuery,
   AllocationListRequest,
   EarningsQuery,
-  EarningsResponse
+  EarningsResponse,
+  OrgOverview
 } from '../types.js';
 import { unwrapResponse } from '../client.js';
 
@@ -59,6 +60,17 @@ export class AllocationsAPI {
    */
   async earnings(query: EarningsQuery): Promise<EarningsResponse> {
     const response = await this.client.get(`${this.prefix}/allocations/earnings`, { params: query });
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Get org-level overview of all wallet allocations.
+   * Returns aggregate metrics: total value, yield, APY, and distributions
+   * by protocol, asset, and blockchain.
+   * Scoped to the wallet profile associated with the API key.
+   */
+  async overview(): Promise<OrgOverview> {
+    const response = await this.client.get(`${this.prefix}/allocations/overview`);
     return unwrapResponse(response);
   }
 }
