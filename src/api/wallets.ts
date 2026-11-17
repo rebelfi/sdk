@@ -4,7 +4,11 @@ import {
   WalletResponse,
   WalletListResponse,
   WalletListQuery,
-  UpdateWalletRequest
+  UpdateWalletRequest,
+  WalletChallengeRequest,
+  WalletChallengeResponse,
+  WalletProof,
+  VerifyWalletResponse
 } from '../types.js';
 import { unwrapResponse } from '../client.js';
 
@@ -15,10 +19,28 @@ export class WalletsAPI {
   ) {}
 
   /**
-   * Register a wallet (idempotent — re-registering returns the existing wallet)
+   * Register a wallet (idempotent — re-registering returns the existing wallet).
+   * Pass `proof` (from `challenge()`, signed by the wallet) to register it controlled.
    */
   async register(request: RegisterWalletRequest): Promise<WalletResponse> {
     const response = await this.client.post(`${this.prefix}/wallets/register`, request);
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Request a one-time ownership challenge for a wallet address. Sign `message` with the wallet and pass
+   * `{ challengeId, signature }` to `register({ proof })` or `verify()` before `expiresAt`.
+   */
+  async challenge(request: WalletChallengeRequest): Promise<WalletChallengeResponse> {
+    const response = await this.client.post(`${this.prefix}/wallets/challenge`, request);
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Prove control of a registered wallet with a signed challenge. A watch-only or legacy wallet becomes controlled.
+   */
+  async verify(walletId: number, proof: WalletProof): Promise<VerifyWalletResponse> {
+    const response = await this.client.post(`${this.prefix}/wallets/${walletId}/verify`, proof);
     return unwrapResponse(response);
   }
 

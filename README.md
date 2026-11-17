@@ -107,10 +107,20 @@ const usdcVenues = await client.venues.list({ token: 'USDC' });
 // Get venue details by ID
 const venue = await client.venues.get(venueId);
 
-// Access strategies within a venue
+// Access strategies within a venue.
+// apy is before RebelFi's yield share; apyNet is after it (what the holder earns).
 for (const strategy of venue.strategies) {
-  console.log(`${strategy.name}: ${strategy.apy * 100}% APY`);
+  console.log(`${strategy.name}: ${(strategy.apyNet * 100).toFixed(2)}% APY`);
 }
+
+// Daily APY history of a strategy (1-90 days, default 30, ending yesterday UTC)
+const { yieldShare, history } = await client.venues.apyHistory(strategyId, { days: 30 });
+for (const day of history) {
+  console.log(`${day.date}: ${day.apyGross} gross, ${day.apyNet} net`);
+}
+
+// Price apyNet for one wallet (walletAddress, walletId or userId, at most one)
+const forWallet = await client.venues.apyHistory(strategyId, { days: 7, walletId: 42 });
 ```
 
 ### Allocations
@@ -129,7 +139,8 @@ const solanaAllocations = await client.allocations.list({
   blockchain: 'solana'
 });
 
-// Get allocation at a specific venue
+// Get allocation at a specific venue.
+// currentValue and apyNet are after this wallet's yield share; yieldEarned and apy are before it.
 const allocation = await client.allocations.get(venueId, walletAddress);
 
 // Get earnings history
@@ -254,7 +265,10 @@ try {
 - `INVALID_AMOUNT`, `INVALID_ADDRESS`, `INVALID_TOKEN` - Validation errors
 - `INSUFFICIENT_BALANCE`, `STRATEGY_NOT_ACTIVE`, `OPERATION_EXPIRED`, `INVALID_OPERATION_STATUS` - Business logic errors
 - `VENUE_NOT_FOUND`, `STRATEGY_NOT_FOUND`, `OPERATION_NOT_FOUND` - Resource errors
-- `INVALID_API_KEY`, `API_KEY_DISABLED`, `RATE_LIMIT_EXCEEDED` - Auth errors
+- `INVALID_API_KEY`, `API_KEY_DISABLED`, `API_KEY_EXPIRED`, `API_KEY_ADDRESS_NOT_ALLOWED`, `ORGANIZATION_PENDING_APPROVAL`, `ORGANIZATION_SUSPENDED`, `FORBIDDEN`, `VALIDATION_FAILED`, `RATE_LIMIT_EXCEEDED` - Auth, access, and validation errors
+- `WALLET_NOT_VERIFIED`, `CHALLENGE_EXPIRED`, `CHALLENGE_USED`, `CHALLENGE_MISMATCH`, `INVALID_SIGNATURE`, `ADDRESS_NOT_CLAIMABLE` - Wallet ownership errors
+
+On 401, 403 and 429 responses, `error.code` is the server's code when it sends one (for example `API_KEY_EXPIRED` or `WALLET_NOT_VERIFIED`). Before 1.4.0 these were always `INVALID_API_KEY`, `API_KEY_DISABLED` or `RATE_LIMIT_EXCEEDED`.
 
 ## TypeScript Support
 

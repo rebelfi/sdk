@@ -85,8 +85,13 @@ export interface Strategy {
   token: string;
   /** Token contract address */
   tokenAddress: string;
-  /** Current APY as decimal (e.g., 0.085 for 8.5%) */
+  /** Current APY as decimal (e.g., 0.085 for 8.5%), before the yield share */
   apy: number;
+  /**
+   * Current APY as decimal, after the yield share of the key's holders: end-user wallets of the key's
+   * wallet profile, or the organization's own wallets for an admin key. Equals `apy` when `apy` <= 0.
+   */
+  apyNet: number;
   /** Total value locked */
   tvl?: string;
   /** Minimum deposit amount in base units */
@@ -134,6 +139,35 @@ export interface VenueQuery {
   supportsGasSponsorship?: boolean;
 }
 
+/**
+ * Options for `venues.apyHistory()`. Pass at most one wallet selector to price `apyNet` for that
+ * wallet; without one, the key's holders are used (see `Strategy.apyNet`).
+ */
+export interface ApyHistoryQuery {
+  /** Number of days of history, 1-90 (default: 30) */
+  days?: number;
+  walletAddress?: string;
+  walletId?: number;
+  userId?: string;
+}
+
+export interface ApyHistoryPoint {
+  /** UTC date (YYYY-MM-DD) */
+  date: string;
+  /** Time-weighted average APY over the UTC day, as decimal, before the yield share */
+  apyGross: number;
+  /** `apyGross` after the yield share; equals `apyGross` when `apyGross` <= 0 */
+  apyNet: number;
+}
+
+export interface ApyHistoryResponse {
+  strategyId: number;
+  /** Yield share applied to every date, as decimal (0.02 = 2%) */
+  yieldShare: number;
+  /** Daily APY, ascending, ending yesterday (UTC). Days without a sample are omitted */
+  history: ApyHistoryPoint[];
+}
+
 // ============================================
 // ALLOCATION TYPES
 // ============================================
@@ -161,8 +195,10 @@ export interface Allocation {
   currentValue: string;
   /** Total yield earned in base units */
   yieldEarned: string;
-  /** Current APY as decimal */
+  /** Current APY as decimal, before the yield share */
   apy: number;
+  /** Current APY as decimal, after this wallet's yield share. Equals `apy` when `apy` <= 0 */
+  apyNet: number;
   /** Last update timestamp (ISO 8601) */
   lastUpdated: string;
 }
@@ -414,11 +450,72 @@ export interface RecoverTransactionResponse {
 // WALLET TYPES
 // ============================================
 
+/**
+ * A signed ownership challenge: proof that you hold the key of a wallet address.
+ * Get the challenge from `wallets.challenge()`, sign its `message` with the wallet, and submit both.
+ * - Solana: ed25519 signature over the UTF-8 bytes of `message`, base58-encoded.
+ * - EVM: `personal_sign` / `signMessage(message)`, 0x hex. Contract wallets are checked with ERC-1271.
+ */
+export interface WalletProof {
+  challengeId: number;
+  signature: string;
+}
+
 export interface RegisterWalletRequest {
   walletAddress: string;
   blockchain: Blockchain | `${Blockchain}`;
   userId?: string;
   orgMetadata?: Record<string, unknown>;
+  /**
+   * Proof that you control the address. With it the wallet is registered `CONTROLLED`.
+   * Without it, the wallet is `LEGACY` during the deprecation window (if no other organization owns
+   * the address), otherwise `WATCH_ONLY`.
+   */
+  proof?: WalletProof;
+}
+
+export interface WalletChallengeRequest {
+  walletAddress: string;
+  blockchain: Blockchain | `${Blockchain}`;
+}
+
+export interface WalletChallengeResponse {
+  challengeId: number;
+  /** The exact text to sign */
+  message: string;
+  /** ISO 8601. Sign and submit before then */
+  expiresAt: string;
+}
+
+/**
+ * Whether your organization controls a wallet's address.
+ * - `CONTROLLED`: control proven (signed challenge, or a wallet RebelFi created).
+ * - `LEGACY`: registered without proof; operates normally for now.
+ * - `WATCH_ONLY`: balance only. Operations are refused with `WALLET_NOT_VERIFIED` until you verify.
+ */
+export enum WalletControlStatus {
+  CONTROLLED = 'CONTROLLED',
+  LEGACY = 'LEGACY',
+  WATCH_ONLY = 'WATCH_ONLY',
+}
+
+/** How control of a wallet's address was established. */
+export enum WalletControlMethod {
+  CUSTODY_CREATED = 'CUSTODY_CREATED',
+  AGENT_CREATED = 'AGENT_CREATED',
+  SIGNED_CHALLENGE = 'SIGNED_CHALLENGE',
+  AGENT_SIGNED = 'AGENT_SIGNED',
+  OPERATOR = 'OPERATOR',
+  MIGRATION = 'MIGRATION',
+  LEGACY_SDK = 'LEGACY_SDK',
+}
+
+export interface WalletControl {
+  status: WalletControlStatus | `${WalletControlStatus}`;
+  /** null when watch-only */
+  method: WalletControlMethod | `${WalletControlMethod}` | null;
+  /** ISO 8601. Present when control was proven */
+  provenAt?: string;
 }
 
 export interface WalletResponse {
@@ -430,6 +527,20 @@ export interface WalletResponse {
   walletProfileName?: string;
   walletProfileId?: number;
   createdAt: string;
+  control: WalletControl;
+}
+
+/**
+ * - `CONTROLLED`: your organization now controls the address.
+ * - `UNCHANGED`: it already did.
+ * - `DISPUTED`: another organization holds the address without proof. The wallet stays watch-only while
+ *   RebelFi reviews the dispute.
+ */
+export type WalletVerificationOutcome = 'CONTROLLED' | 'UNCHANGED' | 'DISPUTED';
+
+export interface VerifyWalletResponse {
+  outcome: WalletVerificationOutcome;
+  wallet: WalletResponse;
 }
 
 export interface WalletListResponse {
@@ -497,6 +608,22 @@ export interface DistributionEntry {
   walletCount: number;
 }
 
+export interface OrgOverviewTotals {
+  totalWallets: number;
+  activeWallets: number;
+  totalValueUsd: string;
+  totalYieldEarnedUsd: string;
+  averageApyDecimal: number;
+  protocolDistribution: DistributionEntry[];
+  assetDistribution: DistributionEntry[];
+  blockchainDistribution: DistributionEntry[];
+}
+
+export interface OrgOverviewAll {
+  profiles: OrgOverview[];
+  totals: OrgOverviewTotals;
+}
+
 // ============================================
 // ERROR TYPES
 // ============================================
@@ -520,6 +647,20 @@ export enum ErrorCode {
   TOKEN_MISMATCH = 'TOKEN_MISMATCH',
   INVALID_OPERATION_STATUS = 'INVALID_OPERATION_STATUS',
   OPERATION_IN_PROGRESS = 'OPERATION_IN_PROGRESS',
+  /** The wallet is watch-only: prove control with `wallets.verify()` before operating. `error.details.orgWalletId` */
+  WALLET_NOT_VERIFIED = 'WALLET_NOT_VERIFIED',
+
+  // Proof of control errors
+  /** The challenge expired (410). Request a new one */
+  CHALLENGE_EXPIRED = 'CHALLENGE_EXPIRED',
+  /** The challenge was already used (409). Request a new one */
+  CHALLENGE_USED = 'CHALLENGE_USED',
+  /** Unknown challenge, or one issued for another wallet address or chain (400) */
+  CHALLENGE_MISMATCH = 'CHALLENGE_MISMATCH',
+  /** The signature isn't the address's signature of the challenge message (400). The challenge is used up */
+  INVALID_SIGNATURE = 'INVALID_SIGNATURE',
+  /** Valid proof, but another organization has proven control of the address (409). Contact support */
+  ADDRESS_NOT_CLAIMABLE = 'ADDRESS_NOT_CLAIMABLE',
 
   // Resource errors
   VENUE_NOT_FOUND = 'VENUE_NOT_FOUND',
@@ -537,6 +678,18 @@ export enum ErrorCode {
   // Client-side errors
   INVALID_API_KEY = 'INVALID_API_KEY',
   API_KEY_DISABLED = 'API_KEY_DISABLED',
+  /** Organization exists but a RebelFi operator has not approved it yet */
+  ORGANIZATION_PENDING_APPROVAL = 'ORGANIZATION_PENDING_APPROVAL',
+  /** Organization was suspended; sign-in and API access are refused */
+  ORGANIZATION_SUSPENDED = 'ORGANIZATION_SUSPENDED',
+  /** The API key has an allowlist and the request came from outside it. `error.details.address` is your address */
+  API_KEY_ADDRESS_NOT_ALLOWED = 'API_KEY_ADDRESS_NOT_ALLOWED',
+  /** The API key passed its expiry. Create a new key in the dashboard */
+  API_KEY_EXPIRED = 'API_KEY_EXPIRED',
+  /** Authenticated, but not allowed to perform this action */
+  FORBIDDEN = 'FORBIDDEN',
+  /** Request body failed validation */
+  VALIDATION_FAILED = 'VALIDATION_FAILED',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   TIMEOUT = 'TIMEOUT',
   NETWORK_ERROR = 'NETWORK_ERROR',

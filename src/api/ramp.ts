@@ -19,7 +19,7 @@ import type {
   RecipientListResponse,
   CreateRecipientOnrampAccountRequest,
   CreateRecipientOfframpAccountRequest
-} from '../types.ts';
+} from '../types.js';
 
 export class RampAPI {
   constructor(

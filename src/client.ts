@@ -28,16 +28,33 @@ export function createHttpClient(config: RebelfiSDKConfig): AxiosInstance {
       if (error.response) {
         const { status, data } = error.response;
 
+        // Prefer the server's code when it sends one. The hardcoded codes are only the
+        // fallback for responses that have none (older backends, and a disabled key).
         if (status === 401) {
-          throw new RebelfiError('Invalid API key', 401, ErrorCode.INVALID_API_KEY);
+          throw new RebelfiError(
+            data?.message || 'Invalid API key',
+            401,
+            data?.code || ErrorCode.INVALID_API_KEY,
+            data?.details
+          );
         }
 
         if (status === 403) {
-          throw new RebelfiError('API key revoked or disabled', 403, ErrorCode.API_KEY_DISABLED);
+          throw new RebelfiError(
+            data?.message || 'API key revoked or disabled',
+            403,
+            data?.code || ErrorCode.API_KEY_DISABLED,
+            data?.details
+          );
         }
 
         if (status === 429) {
-          throw new RebelfiError('Rate limit exceeded', 429, ErrorCode.RATE_LIMIT_EXCEEDED);
+          throw new RebelfiError(
+            data?.message || 'Rate limit exceeded',
+            429,
+            data?.code || ErrorCode.RATE_LIMIT_EXCEEDED,
+            data?.details
+          );
         }
 
         // Use error code from response if available

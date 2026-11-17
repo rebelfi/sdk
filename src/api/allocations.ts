@@ -6,7 +6,8 @@ import {
   AllocationListRequest,
   EarningsQuery,
   EarningsResponse,
-  OrgOverview
+  OrgOverview,
+  OrgOverviewAll
 } from '../types.js';
 import { unwrapResponse } from '../client.js';
 
@@ -71,6 +72,18 @@ export class AllocationsAPI {
    */
   async overview(): Promise<OrgOverview> {
     const response = await this.client.get(`${this.prefix}/allocations/overview`);
+    return unwrapResponse(response);
+  }
+
+  /**
+   * Get aggregate overview across all wallet profiles.
+   * Requires an admin API key (read-only, not scoped to a wallet profile).
+   * Returns per-profile breakdown and org-wide totals.
+   * @param walletProfileId Optional filter to get overview for a specific profile
+   */
+  async overviewAll(walletProfileId?: number): Promise<OrgOverviewAll> {
+    const params = walletProfileId ? { walletProfileId } : undefined;
+    const response = await this.client.get(`${this.prefix}/allocations/overview/all`, { params });
     return unwrapResponse(response);
   }
 }
