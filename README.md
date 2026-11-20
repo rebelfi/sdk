@@ -139,9 +139,14 @@ const solanaAllocations = await client.allocations.list({
   blockchain: 'solana'
 });
 
-// Get allocation at a specific venue.
+// Or select the wallet by ID, or every wallet of one of your users
+const byWalletId = await client.allocations.list({ walletId: 42 });
+const byUser = await client.allocations.list({ userId: 'user_123' });
+
+// Get a wallet's allocation in a specific strategy (wallet address or wallet ID).
 // currentValue and apyNet are after this wallet's yield share; yieldEarned and apy are before it.
-const allocation = await client.allocations.get(venueId, walletAddress);
+const allocation = await client.allocations.get(strategyId, 'So11...abc');
+const sameAllocation = await client.allocations.get(strategyId, 42);
 
 // Get earnings history
 const earnings = await client.allocations.earnings({
@@ -156,6 +161,100 @@ console.log(`Total yield: ${earnings.totalYieldEarned}`);
 for (const day of earnings.history) {
   console.log(`${day.date}: ${day.yieldEarned}`);
 }
+
+// Aggregate overview of every wallet in the key's wallet profile
+const overview = await client.allocations.overview();
+console.log(`${overview.activeWallets}/${overview.totalWallets} wallets, $${overview.totalValueUsd}`);
+
+// Admin keys only: per-profile breakdown plus org-wide totals (optionally one profile)
+const { profiles, totals } = await client.allocations.overviewAll();
+```
+
+### Wallets
+
+Register the wallets you operate for, and prove you control them.
+
+```typescript
+import { WalletControlStatus } from '@rebelfi/sdk';
+
+// 1. Ask for a one-time challenge for the address
+const challenge = await client.wallets.challenge({
+  walletAddress: 'So11...abc',
+  blockchain: 'solana'
+});
+
+// 2. Sign challenge.message with the wallet before challenge.expiresAt
+//    - Solana: ed25519 over the UTF-8 bytes of the message, base58-encoded
+//    - EVM: personal_sign / signMessage(message), 0x hex (ERC-1271 for contract wallets)
+const signature = await signWithWallet(challenge.message); // your signing code
+
+// 3. Register the wallet as CONTROLLED (idempotent: re-registering returns the existing wallet)
+const wallet = await client.wallets.register({
+  walletAddress: 'So11...abc',
+  blockchain: 'solana',
+  userId: 'user_123',                 // Optional: your own user identifier
+  orgMetadata: { tier: 'gold' },      // Optional: free-form metadata
+  proof: { challengeId: challenge.challengeId, signature }
+});
+
+// Without `proof`, the wallet is registered LEGACY (during the deprecation window) or WATCH_ONLY.
+// WATCH_ONLY wallets are refused operations with WALLET_NOT_VERIFIED until verified:
+if (wallet.control.status === WalletControlStatus.WATCH_ONLY) {
+  const next = await client.wallets.challenge({ walletAddress: wallet.walletAddress, blockchain: wallet.blockchain });
+  const { outcome } = await client.wallets.verify(wallet.walletId, {
+    challengeId: next.challengeId,
+    signature: await signWithWallet(next.message)
+  });
+  console.log(outcome); // 'CONTROLLED' | 'UNCHANGED' | 'DISPUTED'
+}
+
+// List, get and update wallets
+const { wallets, total } = await client.wallets.list({ userId: 'user_123', page: 1, limit: 50 });
+const fetched = await client.wallets.get(wallet.walletId);
+await client.wallets.update(wallet.walletId, { orgMetadata: { tier: 'platinum' } });
+```
+
+### Wallet Profiles
+
+```typescript
+const { walletProfiles } = await client.walletProfiles.list();
+for (const profile of walletProfiles) {
+  console.log(`${profile.name}: ${profile.walletCount} wallets on ${profile.enabledChains.join(', ')}`);
+}
+```
+
+### Ramp
+
+Fiat on-ramp and off-ramp for your organization. KYB approval is required first.
+
+```typescript
+// KYB
+const kyb = await client.ramp.getKybStatus();
+if (!kyb.kybStatus) {
+  const { kybUrl } = await client.ramp.startKyb(); // send your team to kybUrl
+}
+
+// On-ramp: get bank details that convert incoming USD into a stablecoin on one of your wallets
+const onramp = await client.ramp.createOnrampAccount({
+  orgWalletId: wallet.walletId,
+  destinationAsset: 'USDC'
+});
+console.log(onramp.bankName, onramp.routingNumber, onramp.bankAccountNumber);
+
+// Transactions, summary and CSV export
+const { data, pagination } = await client.ramp.listTransactions({ page: 1, perPage: 25 });
+const summary = await client.ramp.getSummary({ dateFrom: '2026-01-01', dateTo: '2026-01-31' });
+const csv = await client.ramp.exportTransactions({ dateFrom: '2026-01-01' });
+
+// Off-ramp accounts, status and transactions follow the same pattern:
+// createOfframpAccount, listOfframpAccounts, getOfframpStatus,
+// listOfframpTransactions, getOfframpTransaction, exportOfframpTransactions.
+// Recipients: createRecipient, listRecipients, getRecipient, archiveRecipient,
+// createRecipientOnrampAccount, createRecipientOfframpAccount.
+
+// Testing: simulate KYB decisions and transactions
+await client.ramp.simulateKybApproval();
+await client.ramp.simulateOnrampTransaction({ scenario: 'success', usdAmount: 100, onrampAccountId: onramp.id });
 ```
 
 ### Operations
